@@ -16,7 +16,7 @@ from __future__ import unicode_literals
 
 from uuid import uuid1
 
-from cgi import escape
+from html import escape
 from docutils import nodes, utils
 import docutils
 from docutils.parsers import rst

@@ -28,7 +28,7 @@ def initialized(pelican):
 def extract_summary(instance):
     # if summary is already specified, use it
     # if there is no content, there's nothing to do
-    if hasattr(instance, '_summary'):
+    if hasattr(instance, '_summary') and instance._summary != '':
         instance.has_summary = True
         return
 
@@ -84,22 +84,6 @@ def extract_summary(instance):
     instance._summary = summary
     instance.has_summary = True
 
-
-def run_plugin(generators):
-    for generator in generators:
-        if isinstance(generator, ArticlesGenerator):
-            for article in generator.articles:
-                extract_summary(article)
-        elif isinstance(generator, PagesGenerator):
-            for page in generator.pages:
-                extract_summary(page)
-
-
 def register():
     signals.initialized.connect(initialized)
-    try:
-        signals.all_generators_finalized.connect(run_plugin)
-    except AttributeError:
-        # NOTE: This results in #314 so shouldn't really be relied on
-        # https://github.com/getpelican/pelican-plugins/issues/314
-        signals.content_object_init.connect(extract_summary)
+    signals.content_object_init.connect(extract_summary)
