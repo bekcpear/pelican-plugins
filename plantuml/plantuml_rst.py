@@ -10,11 +10,13 @@ from __future__ import unicode_literals
 import sys
 import os
 import tempfile
+import io
 
 from subprocess import Popen,PIPE
 from zlib import adler32
 
-from docutils.nodes import image, literal_block
+from docutils import utils
+from docutils.nodes import paragraph, raw, image, literal_block
 from docutils.parsers.rst import Directive, directives
 from pelican import signals, logger
 
@@ -106,6 +108,88 @@ class PlantUML_rst(Directive):
         return nodes
 
 
+class Tikz(Directive):
+    """ reST directive for TikZ """
+    required_arguments = 0
+    optional_arguments = 0
+    has_content = True
+
+    global global_siteurl
+
+    option_spec = {
+        'class': directives.class_option,
+        'alt': directives.unchanged,
+        'format': directives.unchanged,
+        'libs': directives.unchanged,
+    }
+
+    def run(self):
+
+        path = os.path.abspath(os.path.join('content', 'uml'))
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        nodes = []
+        body = '\n'.join(self.content)
+        if self.options.get('libs', False):
+            libs = '\n'.join(('\\usetikzlibrary{%s}' % x) for x in self.options.get('libs', False).split(','))
+        else:
+            libs = ''
+        tf = tempfile.NamedTemporaryFile(delete=False)
+        tf.write(('\\documentclass{standalone}\n\\usepackage{xeCJK,fontspec,xunicode}\\usepackage{tikz}\setCJKmainfont{Noto Sans CJK TC}\n%s\n\\begin{document}\\begin{tikzpicture}\n' % libs).encode('utf-8'))
+        tf.write(body.encode('utf8'))
+        tf.write('\n\\end{tikzpicture}\\end{document}'.encode('utf-8'))
+        tf.flush()
+
+        imgformat = self.options.get('format', 'svg')
+        imgext = ".svg"
+
+
+        # make a name
+        name = tf.name + imgext
+        output_path = os.path.join(path, os.path.basename(name))
+
+        alt = self.options.get('alt', 'tikz diagram')
+        classes = self.options.pop('class', ['tikz'])
+        cmdline = ['tikz2svg', tf.name, output_path]
+        logger.debug("running: "+ ' '.join(cmdline))
+
+        try:
+            p = Popen(cmdline, stdout=PIPE, stderr=PIPE)
+            out, err = p.communicate()
+            logger.debug("tikz2svg out: "+ out.decode('utf-8'))
+            logger.debug("tikz2svg err: "+ err.decode('utf-8'))
+        except Exception as exc:
+            error = self.state_machine.reporter.error(
+                'Failed to run tikz: %s' % exc,
+                literal_block(self.block_text, self.block_text),
+                line=self.lineno)
+            nodes.append(error)
+        else:
+            if p.returncode == 0:
+                # renaming output image using an hash code, just to not pullate
+                # output directory with a growing number of images
+                newname = os.path.join(path,
+                    "%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
+
+                try:  # for Windows
+                    os.remove(newname)
+                except Exception as exc:
+                    logger.debug('File '+newname+' does not exist, not deleted')
+
+                os.rename(output_path, newname)
+                url = global_siteurl + '/uml/' + os.path.basename(newname)
+                imgnode = image(uri=url, classes=classes, alt=alt)
+                nodes.append(imgnode)
+            else:
+                error = self.state_machine.reporter.error(
+                    'Error in "%s" directive: %s' % (self.name, err),
+                    literal_block(self.block_text, self.block_text),
+                    line=self.lineno)
+                nodes.append(error)
+        return nodes
+
 class Ditaa(Directive):
     required_arguments = 0
     optional_arguments = 0
@@ -178,7 +262,56 @@ class Ditaa(Directive):
 
         return nodes
 
+<<<<<<< HEAD
 def pelican_init(pelicanobj):
+=======
+def make_graphviz(layout):
+    class Graphviz(Directive):
+        required_arguments = 0
+        optional_arguments = 0
+        has_content = True
+
+        global global_siteurl
+
+        option_spec = {
+            'class' : directives.class_option,
+            'alt'   : directives.unchanged,
+            'format': directives.unchanged,
+        }
+
+        def run(self):
+            nodes = []
+
+            body = '\n'.join(self.content)
+
+            alt = self.options.get('alt', 'Graphviz diagram')
+            classes = self.options.pop('class', ['graphviz'])
+            cmdline = [layout, '-Tsvg']
+
+            try:
+                p = Popen(cmdline, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+                out, err = p.communicate(input=body.encode('utf8'))
+            except Exception as exc:
+                error = self.state_machine.reporter.error(
+                    'Failed to run %s: %s' % (layout, exc),
+                    literal_block(self.block_text, self.block_text),
+                    line=self.lineno)
+                nodes.append(error)
+            else:
+                if p.returncode == 0:
+                    svg = out.decode('utf-8')
+                    imgnode = raw(svg, svg, format="html")
+                    nodes.append(imgnode)
+                else:
+                    error = self.state_machine.reporter.error(
+                        'Error in "%s" directive: %s' % (self.name, err),
+                        literal_block(self.block_text, self.block_text),
+                        line=self.lineno)
+                    nodes.append(error)
+
+            return nodes
+    return Graphviz
+>>>>>>> 75af38e0fba505c0274bbf6f3e0fd273f358dfad
 
     global global_siteurl
     global_siteurl = pelicanobj.settings['SITEURL']
@@ -206,3 +339,7 @@ def register():
     signals.initialized.connect(pelican_init)
     directives.register_directive('ditaa', Ditaa)
     directives.register_directive('uml', PlantUML_rst)
+    directives.register_directive('tikz', Tikz)
+    graphviz_filters = 'dot neato twopi circo fdp sfdp patchwork osage'.split(' ')
+    for f in graphviz_filters:
+        directives.register_directive(f, make_graphviz(f))

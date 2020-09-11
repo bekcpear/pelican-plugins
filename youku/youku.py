@@ -65,8 +65,7 @@ class Youku(Directive):
             align = self.options['align']
 
         div_block = '<div class="embed-responsive embed-responsive-16by9" align="{}">'.format(align)
-        embed_block = '<embed src="http://player.youku.com/player.php/sid/{}/v.swf" allowFullScreen="true" quality="high" align="middle" allowScriptAccess="always" type="application/x-shockwave-flash"></embed>'.format(videoID)
-
+        embed_block = '<iframe height=498 width=510 src="https://player.youku.com/embed/{}" frameborder=0 allow="fullscreen"></iframe>'.format(videoID)
         return [
             nodes.raw('', div_block, format='html'),
             nodes.raw('', embed_block, format='html'),
@@ -114,10 +113,10 @@ class YouTubeKu(Directive):
 
         tube_url = 'https://www.youtube.com/embed/{}'.format(tubeVideoID)
         tube_div_block = '<div class="youtube embed-responsive embed-responsive-16by9" align="{}">'.format(align)
-        tube_embed_block = '<iframe src="{}" frameborder="0"></iframe>'.format(tube_url)
+        tube_embed_block = '<iframe src="{}" frameborder="0" allow="fullscreen"></iframe>'.format(tube_url)
 
         ku_div_block = '<div class="youku embed-responsive embed-responsive-16by9" align="{}">'.format(align)
-        ku_embed_block = '<embed src="http://player.youku.com/player.php/sid/{}/v.swf" allowFullScreen="true" quality="high" align="middle" allowScriptAccess="always" type="application/x-shockwave-flash"></embed>'.format(kuVideoID)
+        ku_embed_block = '<iframe height=498 width=510 src="https://player.youku.com/embed/{}" frameborder=0 allow="fullscreen"></iframe>'.format(kuVideoID)
 
         tab_block = """
         <div class="well" style="padding: 0">

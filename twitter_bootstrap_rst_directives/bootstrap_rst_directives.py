@@ -13,6 +13,7 @@ the twitter bootstrap framework.
 
 from __future__ import unicode_literals
 
+import sys, re
 
 from uuid import uuid1
 
@@ -30,9 +31,9 @@ class CleanHTMLTranslator(PelicanHTMLTranslator):
 
     """
         A custom HTML translator based on the Pelican HTML translator.
-        Used to clean up some components html classes that could conflict 
+        Used to clean up some components html classes that could conflict
         with the bootstrap CSS classes.
-        Also defines new tags that are not handleed by the current implementation of 
+        Also defines new tags that are not handleed by the current implementation of
         docutils.
 
         The most obvious example is the Container component
@@ -131,6 +132,8 @@ def code_role(name, rawtext, text, lineno, inliner,
 
         This code is not highlighted
     """
+    rawtext = rawtext.replace("/", "/\u200B") # adding breakable zero width space
+    text = text.replace("/", "/\u200B") # adding breakable zero width space
     new_element = nodes.literal(rawtext, text)
     new_element.set_class('code')
 
@@ -169,6 +172,20 @@ def twi_role(name, rawtext, text, lineno, inliner,
     new_element = nodes.reference(rawtext, "@"+text, refuri="//twitter.com/"+text)
     return [new_element], []
 
+def pixiv_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        This function creates an inline code block as defined in the twitter bootstrap documentation
+        overrides the default behaviour of the code role
+
+        *usage:*
+            :pixiv:`illust_id|text`
+
+    """
+    rs = tuple(text.split("|"))
+    new_element = nodes.reference(rawtext, "%s (Pixiv %s)" % (rs[1], rs[0]), refuri="https://www.pixiv.net/member_illust.php?mode=medium&illust_id="+rs[0])
+    return [new_element], []
+
 
 def fref_role(name, rawtext, text, lineno, inliner,
               options={}, content=[]):
@@ -179,6 +196,55 @@ def fref_role(name, rawtext, text, lineno, inliner,
     """
     new_element = nodes.reference(rawtext, text, refuri="/links.html#" + (text.lower()))
     return [new_element], []
+
+
+def pkg_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        *usage:*
+            :pkg:`aur/$aurpkgname` or :pkg:`$repo/$arch/pkgname`
+
+    """
+    s = tuple(text.split("/"))
+    uri = ""
+    pkgname = ""
+    if len(s) == 1:
+        uri="https://www.archlinux.org/packages/?sort=&q="+s[0]
+        pkgname = s[0]
+    elif len(s) == 2:
+        if s[0] == 'aur':
+            uri = "https://aur.archlinux.org/packages/" + s[1] + "/"
+            pkgname = s[1]
+        else:
+            uri="https://www.archlinux.org/packages/" + s[0] +"/x86_64/" + s[1] + "/"
+            pkgname = s[1]
+    else:
+        uri = "https://www.archlinux.org/packages/" + s[0] +"/" + s[1] + "/" + s[2] + "/"
+        pkgname = s[2]
+
+
+    new_element = nodes.reference(rawtext, pkgname, refuri=uri)
+    return [new_element], []
+
+
+def archwiki_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        *usage:*
+            :archwiki:`Wiki Name` or :archwiki:`Wiki Name | Text name`
+
+    """
+    rs = tuple(text.split("|"))
+    if len(rs) == 2:
+        content = rs[0]
+        uri = "https://wiki.archlinux.org/index.php/" + rs[0].replace(' ', '_')
+    else:
+        content = text
+        uri = "https://wiki.archlinux.org/index.php/" + text.replace(' ', '_')
+
+    new_element = nodes.reference(rawtext, content, refuri=uri)
+    return [new_element], []
+
 
 
 def irc_role(name, rawtext, text, lineno, inliner,
@@ -232,7 +298,7 @@ def html_role(name, rawtext, text, lineno, inliner,
 def glyph_role(name, rawtext, text, lineno, inliner,
                options={}, content=[]):
     """
-        This function defines a glyph inline role that show a glyph icon from the 
+        This function defines a glyph inline role that show a glyph icon from the
         twitter bootstrap framework
 
         *Usage:*
@@ -274,12 +340,122 @@ glyph_role.options = {
 }
 glyph_role.content = False
 
+class TranslateParagraph(rst.Directive):
+    has_content = True
+
+    def create_rows(self, content):
+        # return content
+        result = []
+        current_type = None
+        current_row = []
+        for i in content:
+            # print(type(i), file=sys.stderr)
+            if type(i) == nodes.block_quote:
+                current_row.append(i.children[0])
+            else:
+                result.append(current_row)
+                current_row = [i]
+        result.append(current_row)
+        return result
+
+    def create_table_row(self, row_cells):
+        row = nodes.row()
+        for cell in row_cells:
+            entry = nodes.entry()
+            row += entry
+            entry += cell
+        return row
+
+    def run(self):
+
+        p = nodes.paragraph(text=self.content)
+        self.state.nested_parse(self.content, self.content_offset, p)
+
+        content = self.create_rows(p.children[1:])
+        table = nodes.table(border=0, frame='void')
+
+        tgroup = nodes.tgroup(cols=len(content))
+        table += tgroup
+        for i in range(2):
+            tgroup += nodes.colspec(colwidth=1)
+
+        # thead = nodes.thead()
+        # tgroup += thead
+        # thead += self.create_table_row(header)
+
+        tbody = nodes.tbody()
+        tgroup += tbody
+        for data_row in content:
+            tbody += self.create_table_row(data_row)
+
+        return [table]
+
+class TranslateLyrics(rst.Directive):
+    has_content = True
+
+    def create_rows(self, content):
+        # return content
+        result = []
+        current_type = None
+        for i in content:
+            # print('---------', file=sys.stderr)
+            # print('ibefore:'+ str(i), file=sys.stderr)
+            if type(i) == nodes.line:
+                if len(i.children) > 0:
+                    i = str(i.children[0])
+                else:
+                    i = ""
+            # print('iafter:'+ str(i), file=sys.stderr)
+            # r = []
+            # for x in re.split("[ 　]+", i):
+            #     n = nodes.line(text=x)
+            #     r.append(n)
+            # if len(r)<2:
+            #     r = [nodes.line(), nodes.line()]
+            # print('r:'+str(r), file=sys.stderr)
+            # result.append(r)
+            n = nodes.line(text=i)
+            # self.state.nested_parse(n, self.content_offset, n)
+            result.append([n,])
+        return result
+
+    def create_table_row(self, row_cells):
+        row = nodes.row()
+        for cell in row_cells:
+            entry = nodes.entry()
+            row += entry
+            entry += cell
+        return row
+
+    def run(self):
+
+        p = nodes.line_block(text=self.content)
+        self.state.nested_parse(self.content, self.content_offset, p)
+
+        content = self.create_rows(p.children[0].children)
+        table = nodes.table(border=0, frame='void')
+
+        tgroup = nodes.tgroup(cols=len(content))
+        table += tgroup
+        for i in range(2):
+            tgroup += nodes.colspec(colwidth=1)
+
+        # thead = nodes.thead()
+        # tgroup += thead
+        # thead += self.create_table_row(header)
+
+        tbody = nodes.tbody()
+        tgroup += tbody
+        for data_row in content:
+            tbody += self.create_table_row(data_row)
+
+        return [table]
 
 class Label(rst.Directive):
 
     '''
         generic Label directive class definition.
-        This class define a directive that shows 
+        This class define a directive that shows
         bootstrap Labels around its content
 
         *usage:*
@@ -349,19 +525,19 @@ class Panel(rst.Directive):
 
     """
         generic Panel directive class definition.
-        This class define a directive that shows 
+        This class define a directive that shows
         bootstrap Labels around its content
 
         *usage:*
 
-            .. panel-<panel-type>:: 
+            .. panel-<panel-type>::
                 :title: <title>
 
                 <Panel content>
 
         *example:*
 
-            .. panel-default:: 
+            .. panel-default::
                 :title: panel title
 
                 This is a default panel content
@@ -439,7 +615,7 @@ class Alert(rst.Directive):
 
     """
         generic Alert directive class definition.
-        This class define a directive that shows 
+        This class define a directive that shows
         bootstrap Labels around its content
 
         *usage:*
@@ -525,12 +701,12 @@ class Friend(rst.Directive):
             gravatar_email = self.options['gravatar'].strip().encode('utf-8')
             logo_url = 'https://www.gravatar.com/avatar/' + md5(gravatar_email).hexdigest()
 
-        image_element = nodes.image(logo_url, alt=self.options['nick'], width="80px", **self.options)
+        image_element = nodes.image(logo_url, alt=self.options['nick'], width="120px", **self.options)
         image_element['uri'] = logo_url
-        image_element["classes"] = ['media-object']
+        # image_element["classes"] = ['media-object']
 
         image_container = nodes.container()
-        image_container["classes"] += ['media-left']
+        image_container["classes"] += ['friend-head']
         image_container.append(image_element)
 
         title_text = self.options['nick']
@@ -540,7 +716,7 @@ class Friend(rst.Directive):
         title = nodes.paragraph(title_text, '', *title_nodes)
 
         heading_element.append(title)
-        heading_element['classes'] += ['media-heading']
+        heading_element['classes'] += ['media-heading', 'h5']
 
         # get body element
         body_container = nodes.container()
@@ -549,7 +725,7 @@ class Friend(rst.Directive):
                                 body_element)
         body_container.append(heading_element)
         body_container.append(body_element)
-        body_container['classes'] += ['media-body']
+        body_container['classes'] += ['friend-body']
 
         container_element.append(image_container)
         container_element.append(body_container)
@@ -559,7 +735,7 @@ class Media(rst.Directive):
 
     '''
         generic Media directive class definition.
-        This class define a directive that shows 
+        This class define a directive that shows
         bootstrap media image with text according
         to the media component on bootstrap
 
@@ -688,6 +864,8 @@ def register_directives():
 
     rst.directives.register_directive('media', Media)
     rst.directives.register_directive('friend', Friend)
+    rst.directives.register_directive('translate-paragraph', TranslateParagraph)
+    rst.directives.register_directive('translate-lyrics', TranslateLyrics)
 
 
 def register_roles():
@@ -698,8 +876,11 @@ def register_roles():
     rst.roles.register_local_role('del', del_role)
     rst.roles.register_local_role('html', html_role)
     rst.roles.register_local_role('twi', twi_role)
+    rst.roles.register_local_role('pixiv', pixiv_role)
     rst.roles.register_local_role('fref', fref_role)
     rst.roles.register_local_role('irc', irc_role)
+    rst.roles.register_local_role('pkg', pkg_role)
+    rst.roles.register_local_role('archwiki', archwiki_role)
 
 
 def add_reader(readers):

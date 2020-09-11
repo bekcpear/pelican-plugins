@@ -11,11 +11,19 @@ def replace(searchterm, soup, attributes):
     for item in soup.findAll(searchterm):
         item.attrs['class'] = list(set(item.attrs.get('class', []) + attributes))
 
-def replace_tables(soup, attributes=['table',' table-striped', 'table-hover']):
+# def replace_tables(soup, attributes=['table',' table-striped', 'table-hover']):
+#     replace('table', soup, attributes)
+
+def replace_tables(soup, attributes=['table']):
     replace('table', soup, attributes)
+    for item in soup.findAll('table'):
+        item.attrs['border'] = 0
 
 def replace_images(soup, attributes=['img-responsive']):
     replace('img', soup, attributes)
+
+def replace_svg(soup, attributes=['svg-responsive']):
+    replace('svg', soup, attributes)
 
 def replace_embed(soup, attributes=['embed-responsive-item']):
     replace('embed', soup, attributes)
@@ -32,6 +40,7 @@ def bootstrapify(content):
     soup = BeautifulSoup(content._content, 'html.parser')
     replace_tables(soup)
     replace_images(soup)
+    replace_svg(soup)
     replace_embed(soup)
 
     content._content = soup.decode()
