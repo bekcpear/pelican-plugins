@@ -42,7 +42,7 @@ class PlantUML_rst(Directive):
 
     def run(self):
 
-        path = os.path.abspath(os.path.join('content', 'uml'))
+        path = os.path.abspath(os.path.join('content', 'images'))
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -88,7 +88,7 @@ class PlantUML_rst(Directive):
                 # output directory with a growing number of images
                 name = os.path.join(path, os.path.basename(name))
                 newname = os.path.join(path,
-                    "%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
+                    "uml_%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
 
                 try:  # for Windows
                     os.remove(newname)
@@ -96,7 +96,7 @@ class PlantUML_rst(Directive):
                     logger.debug('File '+newname+' does not exist, not deleted')
 
                 os.rename(name, newname)
-                url = global_siteurl + '/uml/' + os.path.basename(newname)
+                url = global_siteurl + '/images/' + os.path.basename(newname)
                 imgnode = image(uri=url, classes=classes, alt=alt)
                 nodes.append(imgnode)
             else:
@@ -125,7 +125,7 @@ class Tikz(Directive):
 
     def run(self):
 
-        path = os.path.abspath(os.path.join('content', 'uml'))
+        path = os.path.abspath(os.path.join('content', 'images'))
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -205,7 +205,7 @@ class Ditaa(Directive):
 
     def run(self):
 
-        path = os.path.abspath(os.path.join('content', 'uml'))
+        path = os.path.abspath(os.path.join('content', 'images'))
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -242,7 +242,7 @@ class Ditaa(Directive):
                 # renaming output image using an hash code, just to not pullate
                 # output directory with a growing number of images
                 name = os.path.join(path, os.path.basename(name))
-                newname = os.path.join(path, "%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
+                newname = os.path.join(path, "ditaa_%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
 
                 try:  # for Windows
                     os.remove(newname)
