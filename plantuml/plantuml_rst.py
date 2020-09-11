@@ -125,7 +125,7 @@ class Tikz(Directive):
 
     def run(self):
 
-        path = os.path.abspath(os.path.join('content', 'images'))
+        path = os.path.abspath(os.path.join('content', 'uml'))
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -250,7 +250,7 @@ class Ditaa(Directive):
                     logger.debug('File '+newname+' does not exist, not deleted')
 
                 os.rename(name, newname)
-                url = global_siteurl + '/uml/' + os.path.basename(newname)
+                url = global_siteurl + '/images/' + os.path.basename(newname)
                 imgnode = image(uri=url, classes=classes, alt=alt)
                 nodes.append(imgnode)
             else:
@@ -313,7 +313,7 @@ def custom_url(generator, metadata):
     """ Saves globally the value of SITEURL configuration parameter """
     global global_siteurl
     global_siteurl = generator.settings['SITEURL']
-    if "/" in global_siteurl[2:]:  # trim "//" from url, and return to origin SITEURL for subsites
+    if "/" in global_siteurl[7:]:  # trim "//" from url, and return to origin SITEURL for subsites
         global_siteurl = global_siteurl[:global_siteurl.rindex("/")]
 
 
