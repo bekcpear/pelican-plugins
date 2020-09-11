@@ -42,7 +42,7 @@ class PlantUML_rst(Directive):
 
     def run(self):
 
-        path = os.path.abspath(os.path.join('content', 'images'))
+        path = os.path.abspath(os.path.join('content', 'uml'))
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -88,7 +88,7 @@ class PlantUML_rst(Directive):
                 # output directory with a growing number of images
                 name = os.path.join(path, os.path.basename(name))
                 newname = os.path.join(path,
-                    "uml_%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
+                    "%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
 
                 try:  # for Windows
                     os.remove(newname)
@@ -96,7 +96,7 @@ class PlantUML_rst(Directive):
                     logger.debug('File '+newname+' does not exist, not deleted')
 
                 os.rename(name, newname)
-                url = global_siteurl + '/images/' + os.path.basename(newname)
+                url = global_siteurl + '/uml/' + os.path.basename(newname)
                 imgnode = image(uri=url, classes=classes, alt=alt)
                 nodes.append(imgnode)
             else:
@@ -205,7 +205,7 @@ class Ditaa(Directive):
 
     def run(self):
 
-        path = os.path.abspath(os.path.join('content', 'images'))
+        path = os.path.abspath(os.path.join('content', 'uml'))
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -242,7 +242,7 @@ class Ditaa(Directive):
                 # renaming output image using an hash code, just to not pullate
                 # output directory with a growing number of images
                 name = os.path.join(path, os.path.basename(name))
-                newname = os.path.join(path, "ditaa_%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
+                newname = os.path.join(path, "%08x" % (adler32(body.encode('utf8')) & 0xffffffff))+imgext
 
                 try:  # for Windows
                     os.remove(newname)
@@ -250,7 +250,7 @@ class Ditaa(Directive):
                     logger.debug('File '+newname+' does not exist, not deleted')
 
                 os.rename(name, newname)
-                url = global_siteurl + '/images/' + os.path.basename(newname)
+                url = global_siteurl + '/uml/' + os.path.basename(newname)
                 imgnode = image(uri=url, classes=classes, alt=alt)
                 nodes.append(imgnode)
             else:
@@ -262,9 +262,6 @@ class Ditaa(Directive):
 
         return nodes
 
-<<<<<<< HEAD
-def pelican_init(pelicanobj):
-=======
 def make_graphviz(layout):
     class Graphviz(Directive):
         required_arguments = 0
@@ -311,11 +308,16 @@ def make_graphviz(layout):
 
             return nodes
     return Graphviz
->>>>>>> 75af38e0fba505c0274bbf6f3e0fd273f358dfad
 
+def custom_url(generator, metadata):
+    """ Saves globally the value of SITEURL configuration parameter """
     global global_siteurl
-    global_siteurl = pelicanobj.settings['SITEURL']
+    global_siteurl = generator.settings['SITEURL']
+    if "/" in global_siteurl[2:]:  # trim "//" from url, and return to origin SITEURL for subsites
+        global_siteurl = global_siteurl[:global_siteurl.rindex("/")]
 
+
+def pelican_init(pelicanobj):
     """ Prepare configurations for the MD plugin """
     try:
         import markdown
@@ -337,6 +339,7 @@ def make_graphviz(layout):
 def register():
     """Plugin registration."""
     signals.initialized.connect(pelican_init)
+    signals.article_generator_context.connect(custom_url)
     directives.register_directive('ditaa', Ditaa)
     directives.register_directive('uml', PlantUML_rst)
     directives.register_directive('tikz', Tikz)
