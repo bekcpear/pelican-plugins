@@ -25,6 +25,62 @@ def initialized(pelican):
                                     '<!-- PELICAN_END_SUMMARY -->')
         pelican.settings.setdefault('SUMMARY_USE_FIRST_PARAGRAPH', False)
 
+def extract_summary_s(instance, summary):
+    begin_marker = instance.settings['SUMMARY_BEGIN_MARKER']
+    end_marker   = instance.settings['SUMMARY_END_MARKER']
+    use_first_paragraph = instance.settings['SUMMARY_USE_FIRST_PARAGRAPH']
+
+    remove_markers = True
+    begin_summary = -1
+    end_summary = -1
+    moreS = False
+
+    content = instance._content
+
+    if begin_marker:
+        begin_summary = content.find(begin_marker)
+    if end_marker:
+        end_summary = content.find(end_marker)
+
+    if begin_summary == -1 and end_summary == -1 and use_first_paragraph:
+        begin_marker, end_marker = '<p>', '</p>'
+        remove_markers = False
+        begin_summary = content.find(begin_marker)
+        end_summary = content.find(end_marker)
+        begin_marker = instance.settings['SUMMARY_BEGIN_MARKER']
+
+    if begin_summary == -1 and end_summary == -1:
+        instance.has_summary = False
+        return '', False
+
+
+    # skip over the begin marker, if present
+    if begin_summary == -1 or begin_summary > end_summary:
+        begin_summary = 0
+    else:
+        begin_summary = begin_summary + len(begin_marker)
+
+    if end_summary == -1:
+        end_summary = None
+
+    summary += content[begin_summary:end_summary]
+
+    if remove_markers:
+        # remove the markers from the content
+        if begin_summary:
+            content = content.replace(begin_marker, '', 1)
+        if end_summary:
+            content = content.replace(end_marker, '', 1)
+
+    if begin_marker:
+        begin_summary = content.find(begin_marker)
+        if begin_summary != -1:
+            moreS = True
+
+    instance._content = content
+    return summary, moreS
+
+
 def extract_summary(instance):
     # if summary is already specified, use it
     # if there is no content, there's nothing to do
@@ -36,54 +92,24 @@ def extract_summary(instance):
         instance.has_summary = False
         return
 
-    begin_marker = instance.settings['SUMMARY_BEGIN_MARKER']
-    end_marker   = instance.settings['SUMMARY_END_MARKER']
-    use_first_paragraph = instance.settings['SUMMARY_USE_FIRST_PARAGRAPH']
-    remove_markers = True
+    moreS = True
+    summary = ''
+    while moreS:
+        summary, moreS = extract_summary_s(instance, summary)
 
-    content = instance._content
-    begin_summary = -1
-    end_summary = -1
-    if begin_marker:
-        begin_summary = content.find(begin_marker)
-    if end_marker:
-        end_summary = content.find(end_marker)
-
-    if begin_summary == -1 and end_summary == -1 and use_first_paragraph:
-        begin_marker, end_marker = '<p>', '</p>'
-        remove_markers = False
-        begin_summary = content.find(begin_marker)
-        end_summary = content.find(end_marker)
-
-    if begin_summary == -1 and end_summary == -1:
-        instance.has_summary = False
+    if summary == '':
         return
-
-    # skip over the begin marker, if present
-    if begin_summary == -1:
-        begin_summary = 0
-    else:
-        begin_summary = begin_summary + len(begin_marker)
-
-    if end_summary == -1:
-        end_summary = None
-
-    summary = content[begin_summary:end_summary]
-
-    if remove_markers:
-        # remove the markers from the content
-        if begin_summary:
-            content = content.replace(begin_marker, '', 1)
-        if end_summary:
-            content = content.replace(end_marker, '', 1)
 
     summary = re.sub(r"<div.*>", "", summary)
     summary = re.sub(r"</div>", "", summary)
 
-    instance._content = content
     instance._summary = summary
     instance.has_summary = True
 
+def run_plugin(generator):
+    for article in generator.articles:
+        extract_summary(article)
+
 def register():
     signals.initialized.connect(initialized)
-    signals.content_object_init.connect(extract_summary)
+    signals.article_generator_finalized.connect(run_plugin)
