@@ -42,7 +42,7 @@ class CleanHTMLTranslator(PelicanHTMLTranslator):
     def visit_literal(self, node):
         classes = node.get('classes', node.get('class', []))
         if 'code' in classes:
-            self.body.append(self.starttag(node, 'code'))
+            self.body.append(self.starttag(node, 'code', ''))
         elif 'kbd' in classes:
             self.body.append(self.starttag(node, 'kbd'))
         else:
