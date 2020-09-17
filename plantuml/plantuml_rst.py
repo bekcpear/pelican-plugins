@@ -309,15 +309,21 @@ def make_graphviz(layout):
             return nodes
     return Graphviz
 
-def custom_url(generator, metadata):
     """ Saves globally the value of SITEURL configuration parameter """
+"""
+def custom_url(generator, metadata):
     global global_siteurl
     global_siteurl = generator.settings['SITEURL']
     if "/" in global_siteurl[7:]:  # trim "//" from url, and return to origin SITEURL for subsites
         global_siteurl = global_siteurl[:global_siteurl.rindex("/")]
+"""
 
 
 def pelican_init(pelicanobj):
+
+    global global_siteurl
+    global_siteurl = pelicanobj.settings['SITEURL']
+
     """ Prepare configurations for the MD plugin """
     try:
         import markdown
@@ -339,7 +345,7 @@ def pelican_init(pelicanobj):
 def register():
     """Plugin registration."""
     signals.initialized.connect(pelican_init)
-    signals.article_generator_context.connect(custom_url)
+    """signals.article_generator_context.connect(custom_url)"""
     directives.register_directive('ditaa', Ditaa)
     directives.register_directive('uml', PlantUML_rst)
     directives.register_directive('tikz', Tikz)
