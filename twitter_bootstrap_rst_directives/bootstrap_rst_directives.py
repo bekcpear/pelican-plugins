@@ -43,14 +43,18 @@ class CleanHTMLTranslator(PelicanHTMLTranslator):
         classes = node.get('classes', node.get('class', []))
         if 'code' in classes:
             self.body.append(self.starttag(node, 'code', ''))
+        elif 'file' in classes:
+            self.body.append(self.starttag(node, 'code', ''))
         elif 'kbd' in classes:
-            self.body.append(self.starttag(node, 'kbd'))
+            self.body.append(self.starttag(node, 'kbd', ''))
         else:
             self.body.append(self.starttag(node, 'pre'))
 
     def depart_literal(self, node):
         classes = node.get('classes', node.get('class', []))
         if 'code' in classes:
+            self.body.append('</code>\n')
+        elif 'file' in classes:
             self.body.append('</code>\n')
         elif 'kbd' in classes:
             self.body.append('</kbd>\n')
@@ -111,8 +115,7 @@ def keyboard_role(name, rawtext, text, lineno, inliner,
 
         This code is not highlighted
     """
-    new_element = nodes.literal(rawtext, text)
-    new_element.set_class('kbd')
+    new_element = nodes.literal(rawtext, text, classes=['kbd'])
 
     return [new_element], []
 
@@ -131,11 +134,26 @@ def code_role(name, rawtext, text, lineno, inliner,
             :code:`<section>`
 
         This code is not highlighted
-    """
     rawtext = rawtext.replace("/", "/\u200B") # adding breakable zero width space
     text = text.replace("/", "/\u200B") # adding breakable zero width space
-    new_element = nodes.literal(rawtext, text)
-    new_element.set_class('code')
+    """
+    new_element = nodes.literal(rawtext, text, classes=['code'])
+
+    return [new_element], []
+
+
+def file_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        This function creates an inline code block as defined in the twitter bootstrap documentation
+        overrides the default behaviour of the code role
+
+        *usage:*
+            :file:`<file path>` <---
+    rawtext = rawtext.replace("/", "/\u200B") # adding breakable zero width space
+    text = text.replace("/", "/\u200B") # adding breakable zero width space
+    """
+    new_element = nodes.literal(rawtext, text, classes=['file'])
 
     return [new_element], []
 
@@ -198,6 +216,27 @@ def fref_role(name, rawtext, text, lineno, inliner,
     return [new_element], []
 
 
+def gepkg_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        *usage:*
+            :pkg:`category/pkgname`
+
+    """
+    s = tuple(text.split("/"))
+    uri = ""
+    pkgname = ""
+    if len(s) == 1:
+        uri="https://packages.gentoo.org/packages/search?q="+s[0]
+        pkgname = s[0]
+    else:
+        uri="https://packages.gentoo.org/packages/" + s[0] +"/" + s[1]
+        pkgname = s[0] + '/' + s[1]
+
+    new_element = nodes.reference(rawtext, pkgname, refuri=uri, classes=['package'])
+    return [new_element], []
+
+
 def pkg_role(name, rawtext, text, lineno, inliner,
               options={}, content=[]):
     """
@@ -223,7 +262,7 @@ def pkg_role(name, rawtext, text, lineno, inliner,
         pkgname = s[2]
 
 
-    new_element = nodes.reference(rawtext, pkgname, refuri=uri)
+    new_element = nodes.reference(rawtext, pkgname, refuri=uri, classes=['package'])
     return [new_element], []
 
 
@@ -871,6 +910,7 @@ def register_directives():
 def register_roles():
     rst.roles.register_local_role('glyph', glyph_role)
     rst.roles.register_local_role('code', code_role)
+    rst.roles.register_local_role('file', file_role)
     rst.roles.register_local_role('kbd', keyboard_role)
     rst.roles.register_local_role('ruby', ruby_role)
     rst.roles.register_local_role('del', del_role)
@@ -879,6 +919,7 @@ def register_roles():
     rst.roles.register_local_role('pixiv', pixiv_role)
     rst.roles.register_local_role('fref', fref_role)
     rst.roles.register_local_role('irc', irc_role)
+    rst.roles.register_local_role('gepkg', gepkg_role)
     rst.roles.register_local_role('pkg', pkg_role)
     rst.roles.register_local_role('archwiki', archwiki_role)
 
