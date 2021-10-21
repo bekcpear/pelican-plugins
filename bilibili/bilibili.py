@@ -67,9 +67,9 @@ class bilibili(Directive):
         if 'align' in self.options:
             align = self.options['align']
 
-        url = 'https://player.bilibili.com/player.html?bvid={}&page=1&high_quality=1&danmuku=0'.format(videoID)
+        url = 'https://player.bilibili.com/player.html?bvid={}&page=1'.format(videoID)
         div_block = '<div class="bilibili" style="position: relative; padding: 35% 50%;" align="{}">'.format(align)
-        embed_block = '<iframe src="{}" style="position: absolute; height: 100%; width: 100%; top: 0; left: 0;" frameborder="0" allow="fullscreen"></iframe>'.format(url)
+        embed_block = '<iframe src="{}" style="position: absolute; height: 100%; width: 100%; top: 0; left: 0;" frameborder="0" allowfullscreen="true"></iframe>'.format(url)
 
         return [
             nodes.raw('', div_block, format='html'),
