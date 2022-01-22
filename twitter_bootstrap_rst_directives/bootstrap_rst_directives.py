@@ -236,6 +236,48 @@ def gepkg_role(name, rawtext, text, lineno, inliner,
     new_element = nodes.reference(rawtext, pkgname, refuri=uri, classes=['package'])
     return [new_element], []
 
+def github_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        *usage:*
+            :github:`org/reponame`
+
+            :github:`org/reponame@commitHash`
+
+            :github:`org/reponame@branch`
+
+            :github:`org/reponame@commitHash:/path/to/file`
+
+            :github:`org/reponame@branch:/path/to/file`
+
+    """
+    s = re.match('(\w+/\w+)(@\w+)?(:[\S]+)?', text)
+
+    github_reponame = s.group(1)
+    github_cob = s.group(2)
+    github_path = s.group(3)
+
+    uri = "https://github.com/" + github_reponame
+    github_reponame_ele = '<span class="reponame">' + github_reponame + '</span>'
+
+    if github_cob != None:
+        uri = uri + "/tree/" + github_cob[1:]
+        github_cob_ele = '<span class="cob">'
+
+        if re.search('^@[abcdef\d]{7,40}$', github_cob) != None:
+            github_cob_ele = github_cob_ele + github_cob[1:8] + '</span>'
+        else:
+            github_cob_ele = github_cob_ele + github_cob[1:] + '</span>'
+
+        if github_path != None:
+            uri = uri + "/" + github_path[1:]
+            github_path_ele = '<span class="path">' + github_path[1:] + '</span>'
+
+    content = '<a class="reference external github" href="%s">%s</a>' % (uri, github_reponame_ele + github_cob_ele + github_path_ele )
+    new_element = nodes.raw(rawtext, utils.unescape(content, 1), format="html")
+    return [new_element], []
+
+
 
 def pkg_role(name, rawtext, text, lineno, inliner,
               options={}, content=[]):
@@ -920,6 +962,7 @@ def register_roles():
     rst.roles.register_local_role('fref', fref_role)
     rst.roles.register_local_role('irc', irc_role)
     rst.roles.register_local_role('gepkg', gepkg_role)
+    rst.roles.register_local_role('github', github_role)
     rst.roles.register_local_role('pkg', pkg_role)
     rst.roles.register_local_role('archwiki', archwiki_role)
 
