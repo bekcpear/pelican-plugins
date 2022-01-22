@@ -270,8 +270,8 @@ def github_role(name, rawtext, text, lineno, inliner,
             github_cob_ele = github_cob_ele + github_cob[1:] + '</span>'
 
         if github_path != None:
-            uri = uri + "/" + github_path[1:]
-            github_path_ele = '<span class="path">' + github_path[1:] + '</span>'
+            uri = uri + "/" + github_path[1:].removeprefix('/')
+            github_path_ele = '<span class="path">' + github_path[1:].removeprefix('/') + '</span>'
 
     content = '<a class="reference external github" href="%s">%s</a>' % (uri, github_reponame_ele + github_cob_ele + github_path_ele )
     new_element = nodes.raw(rawtext, utils.unescape(content, 1), format="html")
