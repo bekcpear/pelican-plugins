@@ -974,4 +974,5 @@ def add_reader(readers):
 def register():
     register_directives()
     register_roles()
-    signals.readers_init.connect(add_reader)
+    #signals.readers_init.connect(add_reader) # not necessary for non-bootstrap implementation
+                                              # this reader even blocks i18n
