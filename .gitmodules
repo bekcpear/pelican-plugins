@@ -139,3 +139,6 @@
 [submodule "deadlinks"]
 	path = deadlinks
 	url = https://github.com/silentlamb/pelican-deadlinks.git
+[submodule "tag-cloud-raw"]
+	path = tag-cloud-raw
+	url = https://github.com/pelican-plugins/tag-cloud.git
