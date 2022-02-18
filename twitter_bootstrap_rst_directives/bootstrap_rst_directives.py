@@ -115,7 +115,8 @@ def keyboard_role(name, rawtext, text, lineno, inliner,
 
         This code is not highlighted
     """
-    new_element = nodes.literal(rawtext, text, classes=['kbd'])
+    new_element = nodes.raw(rawtext, utils.unescape("<kbd>" + text + "</kbd>", 1), format="html")
+    #new_element = nodes.literal(rawtext, text, classes=['kbd'])
 
     return [new_element], []
 
@@ -137,7 +138,8 @@ def code_role(name, rawtext, text, lineno, inliner,
     rawtext = rawtext.replace("/", "/\u200B") # adding breakable zero width space
     text = text.replace("/", "/\u200B") # adding breakable zero width space
     """
-    new_element = nodes.literal(rawtext, text, classes=['code'])
+    #new_element = nodes.literal(rawtext, text, classes=['code'])
+    new_element = nodes.raw(rawtext, utils.unescape("<code>" + text + "</code>", 1), format="html")
 
     return [new_element], []
 
@@ -153,8 +155,23 @@ def file_role(name, rawtext, text, lineno, inliner,
     rawtext = rawtext.replace("/", "/\u200B") # adding breakable zero width space
     text = text.replace("/", "/\u200B") # adding breakable zero width space
     """
-    new_element = nodes.literal(rawtext, text, classes=['file'])
+    #new_element = nodes.literal(rawtext, text, classes=['file'])
+    new_element = nodes.raw(rawtext, utils.unescape('<code class="file">' + text + "</code>", 1), format="html")
 
+    return [new_element], []
+
+# new adds
+def var_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    new_element = nodes.raw(rawtext, utils.unescape('<var>' + text + '</var>', 1), format="html")
+    return [new_element], []
+def q_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    new_element = nodes.raw(rawtext, utils.unescape('<q>' + text + '</q>', 1), format="html")
+    return [new_element], []
+def samp_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    new_element = nodes.raw(rawtext, utils.unescape('<samp>' + text + '</samp>', 1), format="html")
     return [new_element], []
 
 
@@ -170,9 +187,9 @@ def ruby_role(name, rawtext, text, lineno, inliner,
     """
     rs = tuple(text.split("|"))
     if len(rs) == 2:
-        content = "<ruby><rb>%s</rb><rp>(</rp><rt>%s</rt><rp>)</rp></ruby>" % rs
+        content = "<ruby>%s<rp>(</rp><rt>%s</rt><rp>)</rp></ruby>" % rs
     else:
-        content = "<ruby><rb>%s</rb><rp>(</rp><rt> Error no ruby </rt><rp>)</rp></ruby>" % text
+        content = "<ruby>%s<rp>(</rp><rt> Error no ruby </rt><rp>)</rp></ruby>" % text
     new_element = nodes.raw(rawtext, utils.unescape(content, 1), format="html")
     new_element.source, new_element.line = inliner.reporter.get_source_and_line(lineno)
     return [new_element], []
@@ -220,7 +237,7 @@ def gepkg_role(name, rawtext, text, lineno, inliner,
               options={}, content=[]):
     """
         *usage:*
-            :pkg:`category/pkgname`
+            :gepkg:`category/pkgname`
 
     """
     s = tuple(text.split("/"))
@@ -954,6 +971,9 @@ def register_roles():
     rst.roles.register_local_role('code', code_role)
     rst.roles.register_local_role('file', file_role)
     rst.roles.register_local_role('kbd', keyboard_role)
+    rst.roles.register_local_role('var', var_role)
+    rst.roles.register_local_role('q', q_role)
+    rst.roles.register_local_role('samp', samp_role)
     rst.roles.register_local_role('ruby', ruby_role)
     rst.roles.register_local_role('del', del_role)
     rst.roles.register_local_role('html', html_role)
