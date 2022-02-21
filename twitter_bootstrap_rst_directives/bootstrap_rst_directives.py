@@ -245,12 +245,13 @@ def genpkg_role(name, rawtext, text, lineno, inliner,
     pkgname = ""
     if len(s) == 1:
         uri="https://packages.gentoo.org/packages/search?q="+s[0]
-        pkgname = s[0]
+        pkgname = "<span class='name'>" + s[0] + "</span>"
     else:
         uri="https://packages.gentoo.org/packages/" + s[0] +"/" + s[1]
-        pkgname = s[0] + '/' + s[1]
+        pkgname = "<span class='category'>%s</span><span class='slash'>/</span><span class='name'>%s</span>" % (s[0], s[1])
 
-    new_element = nodes.reference(rawtext, pkgname, refuri=uri, classes=['gentoo-package'])
+    content = '<a class="reference external gentoo-package" href="%s">%s</a>' % (uri, pkgname)
+    new_element = nodes.raw(rawtext, utils.unescape(content, 0), format="html")
     return [new_element], []
 
 def github_role(name, rawtext, text, lineno, inliner,
