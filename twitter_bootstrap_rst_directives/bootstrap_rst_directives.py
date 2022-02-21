@@ -233,11 +233,11 @@ def fref_role(name, rawtext, text, lineno, inliner,
     return [new_element], []
 
 
-def gepkg_role(name, rawtext, text, lineno, inliner,
+def genpkg_role(name, rawtext, text, lineno, inliner,
               options={}, content=[]):
     """
         *usage:*
-            :gepkg:`category/pkgname`
+            :genpkg:`category/pkgname`
 
     """
     s = tuple(text.split("/"))
@@ -250,7 +250,7 @@ def gepkg_role(name, rawtext, text, lineno, inliner,
         uri="https://packages.gentoo.org/packages/" + s[0] +"/" + s[1]
         pkgname = s[0] + '/' + s[1]
 
-    new_element = nodes.reference(rawtext, pkgname, refuri=uri, classes=['package'])
+    new_element = nodes.reference(rawtext, pkgname, refuri=uri, classes=['gentoo-package'])
     return [new_element], []
 
 def github_role(name, rawtext, text, lineno, inliner,
@@ -981,7 +981,7 @@ def register_roles():
     rst.roles.register_local_role('pixiv', pixiv_role)
     rst.roles.register_local_role('fref', fref_role)
     rst.roles.register_local_role('irc', irc_role)
-    rst.roles.register_local_role('gepkg', gepkg_role)
+    rst.roles.register_local_role('genpkg', genpkg_role)
     rst.roles.register_local_role('github', github_role)
     rst.roles.register_local_role('pkg', pkg_role)
     rst.roles.register_local_role('archwiki', archwiki_role)
