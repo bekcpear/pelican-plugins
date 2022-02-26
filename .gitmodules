@@ -142,3 +142,6 @@
 [submodule "tag-cloud-raw"]
 	path = tag-cloud-raw
 	url = https://github.com/pelican-plugins/tag-cloud.git
+[submodule "rst_with_html5"]
+	path = rst_with_html5
+	url = https://github.com/bekcpear/pelican-rst_with_html5.git
