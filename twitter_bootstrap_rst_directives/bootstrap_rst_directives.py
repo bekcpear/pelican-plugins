@@ -269,7 +269,7 @@ def github_role(name, rawtext, text, lineno, inliner,
             :github:`org/reponame@branch:/path/to/file`
 
     """
-    s = re.match('(\w+/\w+)(@\w+)?(:[\S]+)?', text)
+    s = re.match('([\w.-]+/[\w.-]+)(@[\w.-]+)?(:[\S]+)?', text)
 
     github_reponame = s.group(1)
     github_cob = s.group(2)
@@ -277,6 +277,9 @@ def github_role(name, rawtext, text, lineno, inliner,
 
     uri = "https://github.com/" + github_reponame
     github_reponame_ele = '<span class="reponame">' + github_reponame + '</span>'
+
+    github_cob_ele = ''
+    github_path_ele = ''
 
     if github_cob != None:
         uri = uri + "/tree/" + github_cob[1:]
