@@ -260,6 +260,8 @@ def github_role(name, rawtext, text, lineno, inliner,
         *usage:*
             :github:`org/reponame`
 
+            :github:`org/reponame#issueNumber`
+
             :github:`org/reponame@commitHash`
 
             :github:`org/reponame@branch`
@@ -269,19 +271,28 @@ def github_role(name, rawtext, text, lineno, inliner,
             :github:`org/reponame@branch:/path/to/file`
 
     """
-    s = re.match('([\w.-]+/[\w.-]+)(@[\w.-]+)?(:[\S]+)?', text)
+
+    is_issue = False
+    s = re.match('([\w.-]+/[\w.-]+)(#[\d]+)', text)
+    if s != None:
+        is_issue = True
+    else:
+        s = re.match('([\w.-]+/[\w.-]+)(@[\w.-]+)?(:[\S]+)?', text)
 
     github_reponame = s.group(1)
     github_cob = s.group(2)
-    github_path = s.group(3)
+    github_path = None
+    if is_issue == False:
+        github_path = s.group(3)
 
     uri = "https://github.com/" + github_reponame
     github_reponame_ele = '<span class="reponame">' + github_reponame + '</span>'
 
     github_cob_ele = ''
     github_path_ele = ''
+    is_issue_class = ''
 
-    if github_cob != None:
+    if github_cob != None and is_issue == False:
         uri = uri + "/tree/" + github_cob[1:]
         github_cob_ele = '<span class="cob">'
 
@@ -293,12 +304,69 @@ def github_role(name, rawtext, text, lineno, inliner,
         if github_path != None:
             uri = uri + "/" + github_path[1:].removeprefix('/')
             github_path_ele = '<span class="path">' + github_path[1:].removeprefix('/') + '</span>'
+    if is_issue:
+        uri = uri + "/issues/" + github_cob[1:]
+        github_cob_ele = '<span class="cob">' + github_cob[1:] + '</span>'
+        is_issue_class = ' gh-issue'
 
-    content = '<a class="reference external github" href="%s">%s</a>' % (uri, github_reponame_ele + github_cob_ele + github_path_ele )
+    content = '<a class="reference external github%s" href="%s">%s</a>' % (is_issue_class, uri, github_reponame_ele + github_cob_ele + github_path_ele )
+    new_element = nodes.raw(rawtext, utils.unescape(content, 0), format="html")
+    return [new_element], []
+
+def ghpr_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        *usage:*
+            :github:`org/reponame#prNumber`
+    """
+
+    s = re.match('([\w.-]+/[\w.-]+)(#[\d]+)', text)
+
+    github_reponame = s.group(1)
+    github_cob = s.group(2)
+
+    uri = "https://github.com/" + github_reponame
+    github_reponame_ele = '<span class="reponame">' + github_reponame + '</span>'
+
+    github_cob_ele = ''
+
+    uri = uri + "/pull/" + github_cob[1:]
+    github_cob_ele = '<span class="cob">' + github_cob[1:] + '</span>'
+    is_issue_class = ' gh-issue'
+
+    content = '<a class="reference external github gh-pr" href="%s">%s</a>' % (uri, github_reponame_ele + github_cob_ele)
     new_element = nodes.raw(rawtext, utils.unescape(content, 0), format="html")
     return [new_element], []
 
 
+
+def llvmreview_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        *usage:*
+            :llvmreview:`DXXXXXX`
+    """
+
+    llvmreview_id = text
+    uri = "https://reviews.llvm.org/" +llvmreview_id
+
+    content = '<a class="reference external llvmreview" href="%s">%s</a>' % (uri, text)
+    new_element = nodes.raw(rawtext, utils.unescape(content, 0), format="html")
+    return [new_element], []
+
+def gentoobug_role(name, rawtext, text, lineno, inliner,
+              options={}, content=[]):
+    """
+        *usage:*
+            :gentoobug:`XXXXXX`
+    """
+
+    gentoobug_id = text
+    uri = "https://bugs.gentoo.org/" + gentoobug_id
+
+    content = '<a class="reference external gentoobug" href="%s">%s</a>' % (uri, 'Bug #' + gentoobug_id)
+    new_element = nodes.raw(rawtext, utils.unescape(content, 0), format="html")
+    return [new_element], []
 
 def pkg_role(name, rawtext, text, lineno, inliner,
               options={}, content=[]):
@@ -987,6 +1055,9 @@ def register_roles():
     rst.roles.register_local_role('irc', irc_role)
     rst.roles.register_local_role('genpkg', genpkg_role)
     rst.roles.register_local_role('github', github_role)
+    rst.roles.register_local_role('ghpr', ghpr_role)
+    rst.roles.register_local_role('llvmreview', llvmreview_role)
+    rst.roles.register_local_role('gentoobug', gentoobug_role)
     rst.roles.register_local_role('pkg', pkg_role)
     rst.roles.register_local_role('archwiki', archwiki_role)
 
